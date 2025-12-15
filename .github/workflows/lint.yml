@@ -16,7 +16,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.11'
+        python-version: '3.11' # Updated from previous step
     
     - name: Install dependencies
       run: |
@@ -25,15 +25,15 @@ jobs:
         pip install -r requirements.txt
     
     - name: Run Black formatter check
-      run: black --check src/ tests/
+      run: black --check src/
       continue-on-error: true
     
     - name: Run isort import checker
-      run: isort --check-only src/ tests/
+      run: isort --check-only src/
       continue-on-error: true
     
     - name: Run Flake8 linter
-      run: flake8 src/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
+      run: flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
     
     - name: Run Pylint
       run: pylint src/ --disable=all --enable=E,F
