@@ -2,7 +2,9 @@ import pandas as pd
 import numpy as np
 import logging
 import ccxt
-import asyncio 
+import asyncio
+import sys
+import argparse
 from strategy import Strategy
 
 # Configure logging
@@ -264,16 +266,30 @@ def fetch_ohlcv_data(exchange_id: str, symbol: str, timeframe: str, since_date: 
         return pd.DataFrame()
 
 # Example Usage:
-async def main():
-    """Main function to run the backtest."""
+async def main(crypto_asset: str = 'BTC', exchange: str = 'kraken', timeframe: str = '1d', 
+               since_date: str = '2022-01-01', limit: int = 1000, initial_capital: float = 100000):
+    """
+    Main function to run the backtest.
+    
+    Args:
+        crypto_asset (str): The cryptocurrency asset (e.g., 'BTC', 'ETH'). Defaults to 'BTC'.
+        exchange (str): The exchange to fetch data from. Defaults to 'kraken'.
+        timeframe (str): The OHLCV timeframe. Defaults to '1d'.
+        since_date (str): The start date in 'YYYY-MM-DD' format. Defaults to '2022-01-01'.
+        limit (int): The maximum number of candles to fetch. Defaults to 1000.
+        initial_capital (float): Starting capital for the backtest. Defaults to 100000.
+    """
     # --- Fetch Data using CCXT ---
-    # Fetch daily BTC/USDT data from Kraken for the last 1000 days
+    # Fetch daily crypto/USDT data from the specified exchange
+    symbol = f'{crypto_asset}/USDT'
+    logger.info(f"Starting backtest for {symbol} on {exchange} exchange")
+    
     data_for_backtest = fetch_ohlcv_data(
-        exchange_id='kraken',
-        symbol='BTC/USDT',
-        timeframe='1d',
-        since_date='2022-01-01', # Start date for historical data
-        limit=1000 # Max number of candles to fetch
+        exchange_id=exchange,
+        symbol=symbol,
+        timeframe=timeframe,
+        since_date=since_date,
+        limit=limit
     )
 
     if data_for_backtest.empty:
@@ -290,7 +306,7 @@ async def main():
     strategy = Strategy()
 
     # Initialize the backtester with the strategy
-    backtester = Backtester(data=data_for_backtest, strategy=strategy, initial_capital=100000, commission_rate=0.00075)
+    backtester = Backtester(data=data_for_backtest, strategy=strategy, initial_capital=initial_capital, commission_rate=0.00075)
     backtester.run_backtest()
     results = backtester.get_results()
 
@@ -329,4 +345,21 @@ async def main():
         logger.warning("Matplotlib not installed. Skipping visualization.")
 
 if __name__ == "__main__":
-    asyncio.run(main()) # Run the async main function
+    parser = argparse.ArgumentParser(description='Run a backtest for a cryptocurrency trading strategy.')
+    parser.add_argument('--crypto', type=str, default='BTC', help='Cryptocurrency asset (e.g., BTC, ETH). Default: BTC')
+    parser.add_argument('--exchange', type=str, default='kraken', help='Exchange to fetch data from. Default: kraken')
+    parser.add_argument('--timeframe', type=str, default='1d', help='OHLCV timeframe (e.g., 1d, 4h, 1h). Default: 1d')
+    parser.add_argument('--since', type=str, default='2022-01-01', help='Start date in YYYY-MM-DD format. Default: 2022-01-01')
+    parser.add_argument('--limit', type=int, default=1000, help='Maximum number of candles to fetch. Default: 1000')
+    parser.add_argument('--capital', type=float, default=100000, help='Initial capital for backtest. Default: 100000')
+    
+    args = parser.parse_args()
+    
+    asyncio.run(main(
+        crypto_asset=args.crypto,
+        exchange=args.exchange,
+        timeframe=args.timeframe,
+        since_date=args.since,
+        limit=args.limit,
+        initial_capital=args.capital
+    ))
