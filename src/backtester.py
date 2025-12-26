@@ -15,7 +15,7 @@ class Backtester:
     """
     A simple backtesting engine for trading strategies.
     """
-    def __init__(self, data: pd.DataFrame, strategy: Strategy, initial_capital: float = 10000.0, commission_rate: float = 0.001):
+    def __init__(self, data: pd.DataFrame, strategy: Strategy, initial_capital: float = 10000.0, commission_rate: float = 0.001, position_size: float = 0.95):
         """
         Initializes the backtester with historical data and trading parameters.
 
@@ -24,6 +24,7 @@ class Backtester:
             strategy (Strategy): The trading strategy to use.
             initial_capital (float): Starting capital for the backtest.
             commission_rate (float): Commission rate per trade (e.g., 0.001 for 0.1%).
+            position_size (float): Percentage of capital to invest per trade (0.0 to 1.0).
         """
         if not isinstance(data.index, pd.DatetimeIndex):
             raise ValueError("Data must have a DatetimeIndex.")
@@ -36,6 +37,7 @@ class Backtester:
         self.strategy = strategy
         self.initial_capital = initial_capital
         self.commission_rate = commission_rate
+        self.position_size = position_size
         self.capital = initial_capital
         self.holdings = 0.0
         self.trade_log = []
@@ -54,7 +56,7 @@ class Backtester:
         """
         if signal == 'BUY':
             if self.capital > 0:
-                amount_to_invest = self.capital * 0.95
+                amount_to_invest = self.capital * self.position_size
                 if amount_to_invest == 0: return
 
                 quantity_to_buy = amount_to_invest / price
@@ -267,7 +269,7 @@ def fetch_ohlcv_data(exchange_id: str, symbol: str, timeframe: str, since_date: 
 
 # Example Usage:
 async def main(crypto_asset: str = 'BTC', exchange: str = 'kraken', timeframe: str = '1d', 
-               since_date: str = '2022-01-01', limit: int = 1000, initial_capital: float = 100000):
+               since_date: str = '2022-01-01', limit: int = 1000, initial_capital: float = 100000, position_size: float = 0.95):
     """
     Main function to run the backtest.
     
@@ -278,6 +280,7 @@ async def main(crypto_asset: str = 'BTC', exchange: str = 'kraken', timeframe: s
         since_date (str): The start date in 'YYYY-MM-DD' format. Defaults to '2022-01-01'.
         limit (int): The maximum number of candles to fetch. Defaults to 1000.
         initial_capital (float): Starting capital for the backtest. Defaults to 100000.
+        position_size (float): Percentage of capital to invest per trade. Defaults to 0.95.
     """
     # --- Fetch Data using CCXT ---
     # Fetch daily crypto/USDT data from the specified exchange
@@ -306,7 +309,7 @@ async def main(crypto_asset: str = 'BTC', exchange: str = 'kraken', timeframe: s
     strategy = Strategy()
 
     # Initialize the backtester with the strategy
-    backtester = Backtester(data=data_for_backtest, strategy=strategy, initial_capital=initial_capital, commission_rate=0.00075)
+    backtester = Backtester(data=data_for_backtest, strategy=strategy, initial_capital=initial_capital, commission_rate=0.00075, position_size=position_size)
     backtester.run_backtest()
     results = backtester.get_results()
 
@@ -352,6 +355,7 @@ if __name__ == "__main__":
     parser.add_argument('--since', type=str, default='2022-01-01', help='Start date in YYYY-MM-DD format. Default: 2022-01-01')
     parser.add_argument('--limit', type=int, default=1000, help='Maximum number of candles to fetch. Default: 1000')
     parser.add_argument('--capital', type=float, default=100000, help='Initial capital for backtest. Default: 100000')
+    parser.add_argument('--position_size', type=float, default=0.95, help='Percentage of capital to invest per trade (0.0-1.0). Default: 0.95')
     
     args = parser.parse_args()
     
@@ -361,5 +365,6 @@ if __name__ == "__main__":
         timeframe=args.timeframe,
         since_date=args.since,
         limit=args.limit,
-        initial_capital=args.capital
+        initial_capital=args.capital,
+        position_size=args.position_size
     ))
