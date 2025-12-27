@@ -3,3 +3,5 @@ pandas-ta-classic
 numpy
 ccxt
 matplotlib
+pytest
+pytest-cov
